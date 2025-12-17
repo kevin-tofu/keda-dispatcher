@@ -1,16 +1,9 @@
 from __future__ import annotations
 import argparse
-import sys
-from pathlib import Path
 import uvicorn
 
-# Ensure project root is importable when running as a script.
-ROOT_DIR = Path(__file__).resolve().parent.parent
-if str(ROOT_DIR) not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR))
-
-from settings import Settings
-from app_factory import create_app  # create_app(cfg) を作ってる想定
+from keda_dispatcher.settings import Settings
+from keda_dispatcher.app_factory import create_app  # create_app(cfg) を作ってる想定
 
 
 def main():

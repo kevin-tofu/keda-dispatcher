@@ -1,18 +1,19 @@
 from __future__ import annotations
 
+
 from fastapi import APIRouter, Body, Depends, File, UploadFile
 
-from app.deps import get_r2_client, get_redis, get_settings
-from app.schemas import ProcDataResponse, ProcStatusResponse, RunRequest, RunResponse
-from app.services.proc import (
+from keda_dispatcher.deps import get_r2_client, get_redis, get_settings
+from keda_dispatcher.schemas import ProcDataResponse, ProcStatusResponse, RunRequest, RunResponse
+from keda_dispatcher.services.proc import (
     create_process_meta,
     load_meta,
     save_bytes_to_r2_and_meta,
     save_json_to_r2_and_meta,
     delete_process,
 )
-from app.services.queue import enqueue_job
-from app.settings import Settings
+from keda_dispatcher.services.queue import enqueue_job
+from keda_dispatcher.settings import Settings
 
 
 router = APIRouter(prefix="/proc", tags=["proc"])

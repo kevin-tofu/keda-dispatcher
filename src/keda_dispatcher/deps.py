@@ -5,7 +5,7 @@ import boto3
 from botocore.config import Config
 from fastapi import Depends
 
-from settings import Settings
+from keda_dispatcher.settings import Settings
 
 
 def get_settings() -> Settings:

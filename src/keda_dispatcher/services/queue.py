@@ -2,8 +2,8 @@ from __future__ import annotations
 import json
 from dataclasses import asdict
 from fastapi import HTTPException
-from schemas import RunResponse, JobMessage
-from services.proc_store import meta_key, now_iso
+from keda_dispatcher.schemas import RunResponse, JobMessage
+from keda_dispatcher.services.proc import meta_key, now_iso
 
 def enqueue_job(*, rds, queue_key: str, process_id: str, job_type: str, params) -> RunResponse:
     pid = process_id

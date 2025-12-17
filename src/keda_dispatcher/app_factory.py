@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from fastapi import FastAPI
 
-from api.proc import router as proc_router
+from keda_dispatcher.api.proc import router as proc_router
 
 
 @dataclass(frozen=True)

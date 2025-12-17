@@ -7,8 +7,8 @@ from datetime import datetime, timezone
 
 from fastapi import HTTPException
 
-from app.schemas import ProcDataResponse, ProcStatusResponse
-from app.settings import Settings
+from keda_dispatcher.schemas import ProcDataResponse, ProcStatusResponse
+from keda_dispatcher.settings import Settings
 
 
 def now_iso() -> str:
