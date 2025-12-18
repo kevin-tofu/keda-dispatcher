@@ -72,6 +72,8 @@ Details and code live in `tutorials/external_api.md`, `tutorials/custom_api.py`,
 - Publish: `.github/workflows/publish.yml` (runs on GitHub Releases published event; `poetry publish --build` to PyPI)
 - Publishing needs a repo secret `PYPI_API_TOKEN` (a PyPI token like `pypi-AgENd...`)
 
+Poetry installs use the classic `[tool.poetry.dependencies]` section (Python `>=3.10,<3.14`).
+
 ## Version bump helper
 
 Update both `pyproject.toml` and `src/keda_dispatcher/__init__.py` in one go:
