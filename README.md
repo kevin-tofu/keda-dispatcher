@@ -1,0 +1,59 @@
+# keda-dispatcher
+
+Local dev setup with FastAPI/Redis/S3-compatible storage.
+
+## Built-in routes
+
+`create_app` always includes the built-in `/proc` routes (see `keda_dispatcher/api/proc.py`). Passing `extra_routers` just adds more routers on top; it does not remove the defaults.
+
+## Adding external APIs (APIRouter)
+
+Pass routers via CLI (no env needed):
+
+```bash
+poetry run keda-dispatcher \
+  --extra-router myapp.extra:router \
+  --extra-router myapp.health:get_router \
+  --host 0.0.0.0 --port 8080
+```
+
+- `router_or_factory` can be an `APIRouter` instance or a zero-arg factory returning one.
+- `--extra-router` is repeatable; values are passed to `create_app` as `extra_routers`.
+
+### Example: start from an external script `__main__`
+
+Minimal `__main__` that injects extra routers and runs uvicorn:
+
+```python
+# myservice/__main__.py
+import uvicorn
+from keda_dispatcher.settings import Settings
+from keda_dispatcher.app_factory import create_app
+from myapp.api import router as custom_router
+from myapp.health import get_router
+
+def main():
+    settings = Settings.from_env()
+    extra = [custom_router, get_router()]
+    app = create_app(settings, extra_routers=extra)
+
+    uvicorn.run(app, host=settings.host, port=settings.port, reload=settings.reload)
+
+if __name__ == "__main__":
+    main()
+```
+
+Run:
+```bash
+python -m myservice
+```
+
+### Quick demo
+
+Run:
+
+```bash
+bash run_demo.sh
+```
+
+Details and code live in `tutorials/external_api.md`, `tutorials/custom_api.py`, `tutorials/health.py`, and `run_demo.sh`.

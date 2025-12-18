@@ -47,6 +47,9 @@ class Settings:
     r2_secret_access_key: str | None
     r2_bucket: str
 
+    # --- Optional external routers (module path list "pkg.mod:router") ---
+    extra_api_modules: tuple[str, ...] = ()
+
     @staticmethod
     def from_env() -> "Settings":
         return Settings(
@@ -72,6 +75,15 @@ class Settings:
             r2_access_key_id=_env("R2_ACCESS_KEY_ID"),
             r2_secret_access_key=_env("R2_SECRET_ACCESS_KEY"),
             r2_bucket=_env("R2_BUCKET", "proc-data") or "proc-data",
+
+            # External API routers
+            extra_api_modules=tuple(
+                [
+                    x.strip()
+                    for x in (_env("EXTRA_API_MODULES", "") or "").split(",")
+                    if x.strip()
+                ]
+            ),
         )
 
     def validate(self) -> None:
