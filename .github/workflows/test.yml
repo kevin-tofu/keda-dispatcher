@@ -31,6 +31,9 @@ jobs:
         with:
           poetry-version: "1.8.3"
 
+      - name: Enable Poetry package mode
+        run: poetry config package-mode true
+
       - name: Install dependencies
         run: poetry install
 
