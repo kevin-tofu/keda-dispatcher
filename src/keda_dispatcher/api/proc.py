@@ -4,7 +4,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Body, Depends, File, UploadFile
 
 from keda_dispatcher.deps import get_r2_client, get_redis, get_settings
-from keda_dispatcher.schemas import ProcDataResponse, ProcStatusResponse, RunRequest, RunResponse
+from keda_dispatcher.schemas import ProcDataResponse, ProcStatusResponse, RunRequest, RunResponse, HealthStatus
 from keda_dispatcher.services.proc import (
     create_process_meta,
     load_meta,
@@ -13,9 +13,13 @@ from keda_dispatcher.services.proc import (
     delete_process,
     kill_process,
     delete_process_data,
+    list_processes,
 )
-from keda_dispatcher.services.queue import enqueue_job
+from keda_dispatcher.services.queue import enqueue_job, remove_job_from_queue
 from keda_dispatcher.settings import Settings
+import boto3
+from botocore.config import Config
+from botocore.exceptions import BotoCoreError
 
 
 router = APIRouter(prefix="/proc", tags=["proc"])
@@ -26,6 +30,14 @@ def proc_data_create(
     rds=Depends(get_redis),
 ):
     return create_process_meta(rds=rds)
+
+
+@router.get("/", response_model=list[ProcStatusResponse])
+def proc_list(
+    status: str | None = None,
+    rds=Depends(get_redis),
+):
+    return list_processes(rds=rds, status=status)
 
 
 @router.put("/{process_id}/data", response_model=ProcDataResponse)
@@ -81,6 +93,22 @@ def proc_run(
     )
 
 
+@router.delete("/{process_id}/queue", response_model=RunResponse)
+def proc_queue_delete(
+    process_id: str,
+    rds=Depends(get_redis),
+    settings: Settings = Depends(get_settings),
+):
+    """
+    Remove the job for this process_id from the Redis queue (if present) and reset status.
+    """
+    return remove_job_from_queue(
+        rds=rds,
+        settings=settings,
+        process_id=process_id,
+    )
+
+
 @router.get("/{process_id}/status", response_model=ProcStatusResponse)
 def proc_status(
     process_id: str,
@@ -127,8 +155,48 @@ def proc_kill(
     process_id: str,
     reason: str | None = None,
     rds=Depends(get_redis),
+    settings: Settings = Depends(get_settings),
+    remove_from_queue: bool = True,
 ):
     """
-    Mark a process as killed (status="killed"). Does not remove queue entries; workers should honor status.
+    Mark a process as killed (status="killed"). By default also removes the queued job (if present).
     """
-    return kill_process(rds=rds, process_id=process_id, reason=reason)
+    return kill_process(
+        rds=rds,
+        settings=settings,
+        process_id=process_id,
+        reason=reason,
+        remove_from_queue=remove_from_queue,
+    )
+
+
+@router.get("/healthz", response_model=HealthStatus)
+def proc_healthz(
+    settings: Settings = Depends(get_settings),
+):
+    # Redis: simple ping
+    redis_ok = False
+    try:
+        rds = get_redis(settings)  # type: ignore
+        redis_ok = bool(rds.ping())
+    except Exception:
+        redis_ok = False
+
+    # R2: only check if configured
+    r2_ok: bool | None = None
+    if settings.r2_endpoint_url and settings.r2_access_key_id and settings.r2_secret_access_key:
+        try:
+            s3 = boto3.client(
+                "s3",
+                endpoint_url=settings.r2_endpoint_url,
+                aws_access_key_id=settings.r2_access_key_id,
+                aws_secret_access_key=settings.r2_secret_access_key,
+                config=Config(signature_version="s3v4"),
+                region_name="auto",
+            )
+            s3.list_buckets()
+            r2_ok = True
+        except Exception:
+            r2_ok = False
+
+    return HealthStatus(redis_ok=redis_ok, r2_ok=r2_ok)

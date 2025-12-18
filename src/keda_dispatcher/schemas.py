@@ -45,3 +45,9 @@ class JobMessage:
 @dataclass
 class ProcCreateResponse:
     process_id: str
+
+
+@dataclass
+class HealthStatus:
+    redis_ok: bool
+    r2_ok: Optional[bool] = None

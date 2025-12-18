@@ -14,8 +14,10 @@ from keda_dispatcher.services.proc import (  # noqa: E402
     save_json_to_r2_and_meta,
     kill_process,
     delete_process_data,
+    list_processes,
 )
 from keda_dispatcher.services.queue import enqueue_job  # noqa: E402
+from keda_dispatcher.services.queue import remove_job_from_queue  # noqa: E402
 
 
 class FakeRedis:
@@ -39,8 +41,37 @@ class FakeRedis:
     def rpush(self, key, value):
         self.lists.setdefault(key, []).append(value)
 
+    def lrange(self, key, start, end):
+        lst = self.lists.get(key, [])
+        # handle -1 end semantics roughly
+        if end == -1:
+            end = len(lst)
+        return lst[start:end+1]
+
+    def lrem(self, key, count, value):
+        lst = self.lists.get(key, [])
+        removed = 0
+        new_list = []
+        for item in lst:
+            if removed < count and item == value:
+                removed += 1
+                continue
+            new_list.append(item)
+        self.lists[key] = new_list
+        return removed
+
     def delete(self, key):
         self.store.pop(key, None)
+
+    def scan_iter(self, match=None):
+        for key in list(self.store.keys()):
+            if match is None:
+                yield key
+            elif match.replace("*", "") in key:
+                yield key
+
+    def ping(self):
+        return True
 
 
 class FakeS3:
@@ -125,7 +156,7 @@ def test_kill_process_sets_status():
 
     create_res = create_process_meta(rds=rds)
     pid = create_res.process_id
-    kill_process(rds=rds, process_id=pid, reason="user requested")
+    kill_process(rds=rds, settings=settings, process_id=pid, reason="user requested", remove_from_queue=False)
 
     meta = load_meta(rds=rds, pid=pid)
     assert meta.status == "killed"
@@ -163,3 +194,59 @@ def test_delete_process_data_resets_meta_and_removes_object():
     assert meta.r2_key == ""
     assert meta.r2_bucket == ""
     assert (settings.r2_bucket, f"proc/{pid}/input") not in s3.objects
+
+
+def test_list_processes_filters_status():
+    rds = FakeRedis()
+    settings = build_settings()
+    create_process_meta(rds=rds)
+    create_process_meta(rds=rds)
+    # mark one as killed
+    keys = list(rds.store.keys())
+    pid = keys[0].split(":")[-1]
+    kill_process(rds=rds, settings=settings, process_id=pid, reason=None)
+
+    killed = list_processes(rds=rds, status="killed")
+    assert len(killed) == 1
+    assert killed[0].process_id == pid
+
+
+def test_remove_job_from_queue_resets_status():
+    rds = FakeRedis()
+    settings = build_settings()
+    create_res = create_process_meta(rds=rds)
+    pid = create_res.process_id
+
+    # enqueue then remove
+    enqueue_job(
+        rds=rds,
+        queue_key=settings.queue_key,
+        process_id=pid,
+        job_type="default",
+        params=None,
+    )
+    res = remove_job_from_queue(rds=rds, settings=settings, process_id=pid)
+    assert res.enqueued is False
+
+    meta = load_meta(rds=rds, pid=pid)
+    assert meta.status in {"uploaded", "created"}
+    assert len(rds.lists.get(settings.queue_key, [])) == 0
+
+
+def test_kill_process_removes_queue_entry():
+    rds = FakeRedis()
+    settings = build_settings()
+    create_res = create_process_meta(rds=rds)
+    pid = create_res.process_id
+    enqueue_job(
+        rds=rds,
+        queue_key=settings.queue_key,
+        process_id=pid,
+        job_type="default",
+        params=None,
+    )
+    kill_process(rds=rds, settings=settings, process_id=pid, reason=None, remove_from_queue=True)
+
+    assert len(rds.lists.get(settings.queue_key, [])) == 0
+    meta = load_meta(rds=rds, pid=pid)
+    assert meta.status == "killed"

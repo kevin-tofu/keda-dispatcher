@@ -161,12 +161,28 @@ def delete_process(
 def kill_process(
     *,
     rds,
+    settings: Settings,
     process_id: str,
     reason: str | None = None,
+    remove_from_queue: bool = True,
 ) -> ProcStatusResponse:
     key = meta_key(process_id)
     if not rds.exists(key):
         raise HTTPException(status_code=404, detail="process_id not found")
+
+    if remove_from_queue:
+        # best-effort: remove from queue if present
+        from keda_dispatcher.services.queue import remove_job_from_queue  # local import to avoid cycle
+        try:
+            remove_job_from_queue(
+                rds=rds,
+                settings=settings,
+                process_id=process_id,
+                update_status=False,
+                raise_if_missing=False,
+            )
+        except Exception:
+            pass
 
     rds.hset(
         key,
@@ -219,3 +235,17 @@ def delete_process_data(
         },
     )
     return ProcStatusResponse(**rds.hgetall(key))
+
+
+def list_processes(
+    *,
+    rds,
+    status: str | None = None,
+) -> list[ProcStatusResponse]:
+    results: list[ProcStatusResponse] = []
+    for key in rds.scan_iter(match="proc:meta:*"):
+        meta = rds.hgetall(key)
+        if status and meta.get("status") != status:
+            continue
+        results.append(ProcStatusResponse(**meta))
+    return results

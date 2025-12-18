@@ -94,12 +94,15 @@ Details and code live in `tutorials/external_api.md`, `tutorials/custom_api.py`,
 ## Data handling and lifecycle
 
 - `POST /proc/` — issue a `process_id` and store metadata in Redis (`status=created`).
+- `GET /proc/` — list processes; optional `status` filter.
 - `PUT /proc/{id}/data` or `/data/json` — upload bytes/JSON to R2 at `proc/{id}/input`; metadata becomes `uploaded`.
 - `POST /proc/{id}/run` — enqueue a job into Redis list `QUEUE_KEY` (default `queue:jobs`); metadata becomes `queued`.
+- `DELETE /proc/{id}/queue` — remove a queued job for this `process_id` from Redis and reset status (`uploaded` if data exists, otherwise `created`).
 - `GET /proc/{id}/status` — returns Redis metadata (status, timestamps, r2_key, etc.).
 - `DELETE /proc/{id}/data` — delete R2 object `proc/{id}/input` and reset metadata (`status=deleted`, r2_key/bucket cleared). Process ID remains.
 - `DELETE /proc/{id}/kill` — mark metadata as `killed` (does not remove queue entries; workers should honor status).
 - `DELETE /proc/{id}` — remove R2 object (if present) and delete metadata from Redis. Fails if status is `queued` or `running`.
+- `GET /proc/healthz` — health check (Redis ping; R2 connectivity if configured).
 
 Note: both binary and JSON uploads share the same R2 key `proc/{id}/input`, so `/data` deletion removes either.
 
