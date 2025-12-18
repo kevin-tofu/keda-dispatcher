@@ -1,0 +1,75 @@
+# Example keda-dispatcher Deployment and Service.
+# Replace image with your built/published container reference.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keda-dispatcher
+  labels:
+    app: keda-dispatcher
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keda-dispatcher
+  template:
+    metadata:
+      labels:
+        app: keda-dispatcher
+    spec:
+      containers:
+        - name: keda-dispatcher
+          image: your-registry/keda-dispatcher:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: HOST
+              value: "0.0.0.0"
+            - name: PORT
+              value: "8080"
+            - name: REDIS_URL
+              value: "redis://redis:6379/0"
+            - name: QUEUE_KEY
+              value: "queue:jobs"
+            # Uncomment and fill for R2 usage:
+            # - name: R2_ENDPOINT_URL
+            #   value: "https://<account>.r2.cloudflarestorage.com"
+            # - name: R2_ACCESS_KEY_ID
+            #   value: "<your-key>"
+            # - name: R2_SECRET_ACCESS_KEY
+            #   value: "<your-secret>"
+            # - name: R2_BUCKET
+            #   value: "proc-data"
+          readinessProbe:
+            httpGet:
+              path: /proc/healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /proc/healthz
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keda-dispatcher
+  labels:
+    app: keda-dispatcher
+spec:
+  selector:
+    app: keda-dispatcher
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080

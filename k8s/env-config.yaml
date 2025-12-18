@@ -1,0 +1,23 @@
+# Example ConfigMap/Secret for environment variables (dev/demo).
+# Apply and reference via envFrom in Deployments.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keda-dispatcher-env
+data:
+  HOST: "0.0.0.0"
+  PORT: "8080"
+  REDIS_URL: "redis://redis:6379/0"
+  QUEUE_KEY: "queue:jobs"
+  REDIS_ADDRESS: "redis:6379"  # for KEDA addressFromEnv
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: keda-dispatcher-r2
+type: Opaque
+stringData:
+  R2_ENDPOINT_URL: "https://<account>.r2.cloudflarestorage.com"
+  R2_ACCESS_KEY_ID: "<your-key>"
+  R2_SECRET_ACCESS_KEY: "<your-secret>"
+  R2_BUCKET: "proc-data"

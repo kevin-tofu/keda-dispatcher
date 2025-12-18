@@ -1,0 +1,45 @@
+# Example worker Deployment that consumes jobs from Redis queue.
+# Replace image/command/env to match your worker implementation.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker-deployment
+  labels:
+    app: worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: worker
+  template:
+    metadata:
+      labels:
+        app: worker
+    spec:
+      containers:
+        - name: worker
+          image: your-registry/worker:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: REDIS_URL
+              value: "redis://redis:6379/0"
+            - name: QUEUE_KEY
+              value: "queue:jobs"
+            # For KEDA ScaledObject addressFromEnv
+            - name: REDIS_ADDRESS
+              value: "redis:6379"
+            # Optional: R2 access if worker needs to fetch data directly
+            # - name: R2_ENDPOINT_URL
+            #   value: "https://<account>.r2.cloudflarestorage.com"
+            # - name: R2_ACCESS_KEY_ID
+            #   value: "<your-key>"
+            # - name: R2_SECRET_ACCESS_KEY
+            #   value: "<your-secret>"
+            # - name: R2_BUCKET
+            #   value: "proc-data"
+          # Replace with your worker command
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "Start worker... (replace with real worker command)"
+              sleep 3600
