@@ -111,11 +111,11 @@ Note: both binary and JSON uploads share the same R2 key `proc/{id}/input`, so `
 ```mermaid
 flowchart LR
     client((Client))
-    api[FastAPI /proc<br/>(keda-dispatcher)]
-    redis[(Redis<br/>meta + queue)]
-    r2[(Cloudflare R2<br/>proc/{id}/input)]
-    worker[(Worker<br/>(your impl))]
-    keda[KEDA ScaledObject<br/>Redis scaler]
+    api["FastAPI /proc (keda-dispatcher)"]
+    redis["Redis meta + queue"]
+    r2["Cloudflare R2 proc/{id}/input"]
+    worker["Worker (your impl)"]
+    keda["KEDA ScaledObject (Redis scaler)"]
 
     client --> api
     api -->|metadata| redis
