@@ -156,3 +156,66 @@ def delete_process(
 
     # Redis メタ削除
     rds.delete(key)
+
+
+def kill_process(
+    *,
+    rds,
+    process_id: str,
+    reason: str | None = None,
+) -> ProcStatusResponse:
+    key = meta_key(process_id)
+    if not rds.exists(key):
+        raise HTTPException(status_code=404, detail="process_id not found")
+
+    rds.hset(
+        key,
+        mapping={
+            "status": "killed",
+            "updated_at": now_iso(),
+            "error": reason or "",
+        },
+    )
+    return ProcStatusResponse(**rds.hgetall(key))
+
+
+def delete_process_data(
+    *,
+    rds,
+    s3,
+    settings: Settings,
+    process_id: str,
+) -> ProcStatusResponse:
+    key = meta_key(process_id)
+    if not rds.exists(key):
+        raise HTTPException(status_code=404, detail="process_id not found")
+
+    meta = rds.hgetall(key)
+    status = meta.get("status", "")
+    if status in {"queued", "running"}:
+        raise HTTPException(
+            status_code=409,
+            detail=f"cannot delete data in status '{status}'",
+        )
+
+    bucket = meta.get("r2_bucket") or settings.r2_bucket
+    r2_key = meta.get("r2_key")
+    if bucket and r2_key:
+        try:
+            s3.delete_object(Bucket=bucket, Key=r2_key)
+        except Exception:
+            pass
+
+    rds.hset(
+        key,
+        mapping={
+            "status": "deleted",
+            "updated_at": now_iso(),
+            "content_type": "",
+            "original_filename": "",
+            "r2_bucket": "",
+            "r2_key": "",
+            "error": "",
+        },
+    )
+    return ProcStatusResponse(**rds.hgetall(key))

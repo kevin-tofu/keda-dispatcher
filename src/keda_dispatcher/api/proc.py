@@ -11,6 +11,8 @@ from keda_dispatcher.services.proc import (
     save_bytes_to_r2_and_meta,
     save_json_to_r2_and_meta,
     delete_process,
+    kill_process,
+    delete_process_data,
 )
 from keda_dispatcher.services.queue import enqueue_job
 from keda_dispatcher.settings import Settings
@@ -100,3 +102,33 @@ def proc_data_delete(
         settings=settings,
         process_id=process_id,
     )
+
+
+@router.delete("/{process_id}/data", response_model=ProcStatusResponse)
+def proc_data_delete_only(
+    process_id: str,
+    rds=Depends(get_redis),
+    s3=Depends(get_r2_client),
+    settings: Settings = Depends(get_settings),
+):
+    """
+    Delete uploaded data in R2 and reset metadata (status=deleted). Does not remove the process itself.
+    """
+    return delete_process_data(
+        rds=rds,
+        s3=s3,
+        settings=settings,
+        process_id=process_id,
+    )
+
+
+@router.delete("/{process_id}/kill", response_model=ProcStatusResponse)
+def proc_kill(
+    process_id: str,
+    reason: str | None = None,
+    rds=Depends(get_redis),
+):
+    """
+    Mark a process as killed (status="killed"). Does not remove queue entries; workers should honor status.
+    """
+    return kill_process(rds=rds, process_id=process_id, reason=reason)

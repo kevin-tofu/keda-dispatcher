@@ -91,6 +91,49 @@ bash run_demo.sh
 
 Details and code live in `tutorials/external_api.md`, `tutorials/custom_api.py`, `tutorials/health.py`, and `run_demo.sh`.
 
+## Data handling and lifecycle
+
+- `POST /proc/` — issue a `process_id` and store metadata in Redis (`status=created`).
+- `PUT /proc/{id}/data` or `/data/json` — upload bytes/JSON to R2 at `proc/{id}/input`; metadata becomes `uploaded`.
+- `POST /proc/{id}/run` — enqueue a job into Redis list `QUEUE_KEY` (default `queue:jobs`); metadata becomes `queued`.
+- `GET /proc/{id}/status` — returns Redis metadata (status, timestamps, r2_key, etc.).
+- `DELETE /proc/{id}/data` — delete R2 object `proc/{id}/input` and reset metadata (`status=deleted`, r2_key/bucket cleared). Process ID remains.
+- `DELETE /proc/{id}/kill` — mark metadata as `killed` (does not remove queue entries; workers should honor status).
+- `DELETE /proc/{id}` — remove R2 object (if present) and delete metadata from Redis. Fails if status is `queued` or `running`.
+
+Note: both binary and JSON uploads share the same R2 key `proc/{id}/input`, so `/data` deletion removes either.
+
+## Architecture (Mermaid)
+
+```mermaid
+flowchart LR
+    client((Client))
+    api[FastAPI /proc\n(keda-dispatcher)]
+    redis[(Redis\nmeta + queue)]
+    r2[(Cloudflare R2\nproc/{id}/input)]
+    worker[(Worker\n(your impl))]
+    keda[KEDA ScaledObject\nRedis scaler]
+
+    client --> api
+    api -->|metadata| redis
+    api -->|enqueue| redis
+    api -->|upload| r2
+
+    redis <-. monitor .-> keda
+    keda -->|scale| worker
+    worker -->|dequeue/process| redis
+    worker -->|read input| r2
+    worker -->|update status| redis
+```
+
+## KEDA ScaledObject example
+
+See `k8s/keda-scaledobject.yaml` for a Redis scaler sample. Key points:
+- `listName` must match `QUEUE_KEY` (default `queue:jobs`).
+- `address` should point to your Redis service (e.g., `redis.default.svc.cluster.local:6379`).
+- If Redis auth is enabled, set `usernameFromEnv` / `passwordFromEnv` env vars on the worker Deployment and uncomment in the ScaledObject.
+- `scaleTargetRef.name` should be the Deployment that dequeues jobs.
+
 ## CI/CD
 
 - Tests: `.github/workflows/test.yml` (runs on `main`/`dev` and PRs, matrix on Python 3.10–3.12, executes `poetry run pytest`)
