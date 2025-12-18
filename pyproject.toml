@@ -1,6 +1,6 @@
 [project]
 name = "keda_dispatcher"
-version = "0.1.2"
+version = "0.1.2b"
 description = ""
 authors = [
     {name = "Kevin-Tofu",email = "koheitech001@gmail.com"}
@@ -23,7 +23,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "keda-dispatcher"
-version = "0.1.2"
+version = "0.1.2b"
 description = ""
 authors = ["Kevin-Tofu <koheitech001@gmail.com>"]
 readme = "README.md"
