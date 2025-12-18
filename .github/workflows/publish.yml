@@ -1,42 +1,42 @@
-name: publish
+name: Upload Python Package
 
 on:
-  push:
-    branches:
-      - main
+  release:
+    types: [published]
 
 jobs:
-  publish:
+  release:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./
+
     steps:
       - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          path: .
 
-      - name: Install Poetry
-        run: pipx install poetry
-
-      - name: Cache Poetry
-        uses: actions/cache@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          path: ~/.cache/pypoetry
-          key: ${{ runner.os }}-poetry-${{ hashFiles('**/poetry.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-poetry-
+          python-version: "3.11"
 
-      - name: Configure Poetry
-        run: poetry config virtualenvs.create false
+      - name: Set up Poetry
+        uses: abatilo/actions-poetry@v2
+        with:
+          poetry-version: "1.8.3"
+
+      - name: Show structure
+        run: tree -L 3
+
+      - name: Remove old build artifacts
+        run: rm -rf dist/*
 
       - name: Install dependencies
-        run: poetry install --no-interaction --no-ansi
+        run: poetry install --no-root
 
-      - name: Build package
-        run: poetry build
+      - name: Run tests
+        run: poetry run pytest
 
-      - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@v1.12.3
-        with:
-          password: ${{ secrets.PYPI_API_TOKEN }}
-          skip-existing: true
+      - name: Publish to PyPI with token
+        run: poetry publish --build --username __token__ --password ${{ secrets.PYPI_API_TOKEN }}

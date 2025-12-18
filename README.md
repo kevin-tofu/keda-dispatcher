@@ -61,5 +61,15 @@ Details and code live in `tutorials/external_api.md`, `tutorials/custom_api.py`,
 ## CI/CD
 
 - Tests: `.github/workflows/test.yml` (runs on `main` and `dev`, executes `poetry run pytest`)
-- Publish: `.github/workflows/publish.yml` (runs on `main`, builds with `poetry build` and publishes to PyPI)
+- Publish: `.github/workflows/publish.yml` (runs on GitHub Releases published event; `poetry publish --build` to PyPI)
 - Publishing needs a repo secret `PYPI_API_TOKEN` (a PyPI token like `pypi-AgENd...`)
+
+## Version bump helper
+
+Update both `pyproject.toml` and `src/keda_dispatcher/__init__.py` in one go:
+
+```bash
+python scripts/bump_version.py 0.2.0
+```
+
+The script prints the before/after version values for each file.
