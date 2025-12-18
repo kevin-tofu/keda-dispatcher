@@ -21,8 +21,8 @@ These map directly to `keda_dispatcher.settings.Settings`:
 | Env | Default | Notes |
 | --- | --- | --- |
 | APP_TITLE | ProcGate | API title |
-| APP_VERSION | 0.1.0 | API version |
-| ENABLE_DOCS | true | Set to `false` to hide Swagger/Redoc |
+| APP_VERSION | package `__version__` | API version |
+| ENABLE_DOCS | false | Set to `true` to show Swagger/Redoc |
 | ROOT_PATH | (empty) | Prefix for reverse proxies (e.g. `/api`) |
 | HOST | 0.0.0.0 | Uvicorn host |
 | PORT | 8080 | Uvicorn port |

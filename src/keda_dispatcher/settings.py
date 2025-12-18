@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 import os
 
+from keda_dispatcher import __version__
+
 
 def _env(name: str, default: str | None = None) -> str | None:
     return os.getenv(name, default)
@@ -28,8 +30,8 @@ class Settings:
     Runtime configuration loaded from environment variables.
 
     - APP_TITLE: default "ProcGate"
-    - APP_VERSION: default "0.1.0"
-    - ENABLE_DOCS: default "true"
+    - APP_VERSION: default package __version__
+    - ENABLE_DOCS: default "false"
     - ROOT_PATH: default ""
     - HOST: default "0.0.0.0"
     - PORT: default 8080
@@ -75,8 +77,8 @@ class Settings:
         return Settings(
             # App
             app_title=_env("APP_TITLE", "ProcGate") or "ProcGate",
-            app_version=_env("APP_VERSION", "0.1.0") or "0.1.0",
-            enable_docs=_env_bool("ENABLE_DOCS", True),
+            app_version=_env("APP_VERSION", __version__) or __version__,
+            enable_docs=_env_bool("ENABLE_DOCS", False),
             root_path=_env("ROOT_PATH", "") or "",
 
             # Server
