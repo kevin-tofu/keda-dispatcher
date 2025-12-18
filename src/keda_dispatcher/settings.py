@@ -24,6 +24,26 @@ def _env_bool(name: str, default: bool) -> bool:
 
 @dataclass(frozen=True)
 class Settings:
+    """
+    Runtime configuration loaded from environment variables.
+
+    - APP_TITLE: default "ProcGate"
+    - APP_VERSION: default "0.1.0"
+    - ENABLE_DOCS: default "true"
+    - ROOT_PATH: default ""
+    - HOST: default "0.0.0.0"
+    - PORT: default 8080
+    - WORKERS: default 1
+    - LOG_LEVEL: default "info"
+    - RELOAD: default "false"
+    - REDIS_URL: default "redis://localhost:6379/0" (required)
+    - QUEUE_KEY: default "queue:jobs"
+    - R2_ENDPOINT_URL: optional, e.g. "https://<account>.r2.cloudflarestorage.com"
+    - R2_ACCESS_KEY_ID: optional
+    - R2_SECRET_ACCESS_KEY: optional
+    - R2_BUCKET: default "proc-data"
+    - EXTRA_API_MODULES: comma-separated "pkg.module:router_or_factory" list (optional)
+    """
     # --- App ---
     app_title: str
     app_version: str

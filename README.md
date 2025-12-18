@@ -14,6 +14,31 @@ Local dev setup with FastAPI/Redis/S3-compatible storage.
 
 `create_app` always includes the built-in `/proc` routes (see `keda_dispatcher/api/proc.py`). Passing `extra_routers` just adds more routers on top; it does not remove the defaults.
 
+## Configuration (env vars)
+
+These map directly to `keda_dispatcher.settings.Settings`:
+
+| Env | Default | Notes |
+| --- | --- | --- |
+| APP_TITLE | ProcGate | API title |
+| APP_VERSION | 0.1.0 | API version |
+| ENABLE_DOCS | true | Set to `false` to hide Swagger/Redoc |
+| ROOT_PATH | (empty) | Prefix for reverse proxies (e.g. `/api`) |
+| HOST | 0.0.0.0 | Uvicorn host |
+| PORT | 8080 | Uvicorn port |
+| WORKERS | 1 | Uvicorn workers |
+| LOG_LEVEL | info | Uvicorn log level |
+| RELOAD | false | Uvicorn reload flag |
+| REDIS_URL | redis://localhost:6379/0 | **Required** |
+| QUEUE_KEY | queue:jobs | Redis list key for jobs |
+| R2_ENDPOINT_URL | (empty) | Cloudflare R2 endpoint |
+| R2_ACCESS_KEY_ID | (empty) | R2 access key |
+| R2_SECRET_ACCESS_KEY | (empty) | R2 secret key |
+| R2_BUCKET | proc-data | R2 bucket |
+| EXTRA_API_MODULES | (empty) | Comma-separated `pkg.module:router_or_factory` list |
+
+CLI flags (e.g. `--host`, `--port`, `--workers`, `--log-level`, `--reload`, `--extra-router`) override env values at startup.
+
 ## Adding external APIs (APIRouter)
 
 Pass routers via CLI (no env needed):
@@ -65,21 +90,3 @@ bash run_demo.sh
 ```
 
 Details and code live in `tutorials/external_api.md`, `tutorials/custom_api.py`, `tutorials/health.py`, and `run_demo.sh`.
-
-## CI/CD
-
-- Tests: `.github/workflows/test.yml` (runs on `main`/`dev` and PRs, matrix on Python 3.10–3.12, executes `poetry run pytest`)
-- Publish: `.github/workflows/publish.yml` (runs on GitHub Releases published event; `poetry publish --build` to PyPI)
-- Publishing needs a repo secret `PYPI_API_TOKEN` (a PyPI token like `pypi-AgENd...`)
-
-Poetry installs use the classic `[tool.poetry.dependencies]` section (Python `>=3.10,<3.14`).
-
-## Version bump helper
-
-Update both `pyproject.toml` and `src/keda_dispatcher/__init__.py` in one go:
-
-```bash
-python scripts/bump_version.py 0.2.0
-```
-
-The script prints the before/after version values for each file.
