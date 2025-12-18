@@ -1,0 +1,23 @@
+# Example KEDA ScaledObject for Redis queue scaling.
+# Adjust names, namespace, and redis address/password to your environment.
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: keda-dispatcher-redis
+  namespace: default
+spec:
+  scaleTargetRef:
+    name: worker-deployment # Deployment that dequeues jobs from Redis
+  pollingInterval: 30       # seconds between checks
+  cooldownPeriod: 300       # seconds to scale down after inactivity
+  minReplicaCount: 0
+  maxReplicaCount: 10
+  triggers:
+    - type: redis
+      metadata:
+        address: redis.default.svc.cluster.local:6379
+        listName: queue:jobs      # must match Settings.queue_key
+        listLength: "1"           # scale out when >=1 items
+        # Uncomment if you use ACL auth; env vars must exist on the target deployment
+        # usernameFromEnv: REDIS_USERNAME
+        # passwordFromEnv: REDIS_PASSWORD
