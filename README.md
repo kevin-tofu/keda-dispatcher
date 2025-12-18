@@ -1,3 +1,11 @@
+
+[![PyPI version](https://img.shields.io/pypi/v/keda_dispatcher.svg?cacheSeconds=60)](https://pypi.org/project/keda_dispatcher/)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Python Version](https://img.shields.io/pypi/pyversions/keda_dispatcher.svg)](https://pypi.org/project/keda_dispatcher/)
+[![PyPI Downloads](https://static.pepy.tech/badge/keda_dispatcher)](https://pepy.tech/projects/keda_dispatcher)
+![CI](https://github.com/kevin-tofu/keda_dispatcher/actions/workflows/python-tests.yml/badge.svg)
+
+
 # keda-dispatcher
 
 Local dev setup with FastAPI/Redis/S3-compatible storage.
@@ -60,7 +68,7 @@ Details and code live in `tutorials/external_api.md`, `tutorials/custom_api.py`,
 
 ## CI/CD
 
-- Tests: `.github/workflows/test.yml` (runs on `main` and `dev`, executes `poetry run pytest`)
+- Tests: `.github/workflows/test.yml` (runs on `main`/`dev` and PRs, matrix on Python 3.10–3.12, executes `poetry run pytest`)
 - Publish: `.github/workflows/publish.yml` (runs on GitHub Releases published event; `poetry publish --build` to PyPI)
 - Publishing needs a repo secret `PYPI_API_TOKEN` (a PyPI token like `pypi-AgENd...`)
 
