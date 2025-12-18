@@ -57,3 +57,9 @@ bash run_demo.sh
 ```
 
 Details and code live in `tutorials/external_api.md`, `tutorials/custom_api.py`, `tutorials/health.py`, and `run_demo.sh`.
+
+## CI/CD
+
+- Tests: `.github/workflows/test.yml` (runs on `main` and `dev`, executes `poetry run pytest`)
+- Publish: `.github/workflows/publish.yml` (runs on `main`, builds with `poetry build` and publishes to PyPI)
+- Publishing needs a repo secret `PYPI_API_TOKEN` (a PyPI token like `pypi-AgENd...`)
